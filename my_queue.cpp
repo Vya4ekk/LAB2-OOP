@@ -1,4 +1,4 @@
-#include "my_queue.h"
+#include "My_queue.h"
 
 using namespace std;
 
@@ -21,7 +21,7 @@ que::que(const que& q)
     
     for (int i = 0; i < q.count; i++)
     {
-        enqueue(q.arr[i]);
+        push(q.arr[i]);
     }
 }
 
@@ -29,9 +29,8 @@ que::~que() {
     delete[] arr;
 }
 
-void que::dequeue() //удаления переднего элемента из очереди
+void que::pop() //СѓРґР°Р»РµРЅРёСЏ РїРµСЂРµРґРЅРµРіРѕ СЌР»РµРјРµРЅС‚Р° РёР· РѕС‡РµСЂРµРґРё
 {
-    
     people* temp = new people[this->count - 1];
 
     for (int i = 1; i < this->count; i++)
@@ -42,9 +41,8 @@ void que::dequeue() //удаления переднего элемента из очереди
     delete[] this->arr;
     this->arr = new people[this->capacity];
     this->count--;
-    int j = this->count;
-
-    for (int i = 0; i < j; i++)
+    
+    for (int i = 0; i < this->count; i++)
     {
         this->arr[i] = temp[i];
     }
@@ -52,9 +50,8 @@ void que::dequeue() //удаления переднего элемента из очереди
 }
 
 
-void que::enqueue(people item) //добавления элемента в queue
+void que::push(people item) //РґРѕР±Р°РІР»РµРЅРёСЏ СЌР»РµРјРµРЅС‚Р° РІ queue
 {
-
     if (isFull())
     {
         incapacity();
@@ -66,7 +63,7 @@ void que::enqueue(people item) //добавления элемента в queue
     this->setpriority();
 }
 
-people que::peek() //возврат первого элемента queue
+people que::peek() //РІРѕР·РІСЂР°С‚ РїРµСЂРІРѕРіРѕ СЌР»РµРјРµРЅС‚Р° queue
 {
     if (isEmpty())
     {
@@ -88,14 +85,30 @@ bool que::isFull() {
     return (size() == capacity);
 }
 
-people& que::operator=(const people& p)
+que& que::operator=(const people& p)
 {
-    
-    return *this->arr;
+    if (this->left >= 0 && this->right <= count - 1)
+    {
+        for (int i = this->left - 1; i < this->right; i++)
+        {
+            this->arr[i] = p;
+        }
+    }
+    return *this;
 }
 
 que& que::operator=(const que& q)
 {   
+        if (this->left >= 0 && this->right <= count - 1)
+        {
+            int i = this->left - 1, j = q.left;
+            for (i, j; i < this->right; i++, j++)
+            {
+                this->arr[i] = q.arr[j];
+            }
+            return *this;
+        }
+
         if (this->arr != nullptr)
         {
             delete[] this->arr;
@@ -109,31 +122,32 @@ que& que::operator=(const que& q)
 
         for (int i = 0; i < q.count; i++)
         {
-            enqueue(q.arr[i]);
+            push(q.arr[i]);
         }
-        return *this;   
+        return *this;
 }
 
-que& que::operator()(int l, int r, const people& p)
+que& que::operator()(int l, int r)
 {
     if (r > count || l < 0)
     {
-        cout << "Неправильные границы\n";
+        cout << "РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РіСЂР°РЅРёС†С‹\n";
         system("pause");
         return *this;
     }
 
-    for (int i = l - 1; i != r; i++)
-    {
-        arr[i] = p;
-    }
+    this->left = l;
+    this->right = r;
     return *this;
 }
 
-void que::incapacity(int newcapacity) //увеличение capacity
+void que::incapacity(int newcapacity) //СѓРІРµР»РёС‡РµРЅРёРµ capacity
 {
-    if (newcapacity >= capacity) { capacity = newcapacity; return; }
-    capacity += newcapacity;
+    if (newcapacity >= capacity) { capacity = newcapacity; }
+    else
+    {
+        capacity += newcapacity;
+    }
     people* temp = new people[this->capacity];
 
     for (int i = 0; i < this->count; i++)
@@ -154,7 +168,7 @@ void que::incapacity(int newcapacity) //увеличение capacity
 
 void que::show()
 {
-    cout << "\tИмя\t\tПриоритет" << endl;
+    cout << "\tРРјСЏ\t\tРџСЂРёРѕСЂРёС‚РµС‚" << endl;
     for (int i = 0; i < this->count; i++)
     {
         cout << i + 1 << ".    " << arr[i].name << "\t\t  " << arr[i].priority << endl;
@@ -166,80 +180,34 @@ void que::file(std::string filename)
 {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    std::fstream file;
-    file.open(filename, fstream::out | fstream::app);
-    while (!file.is_open())
-    {
-        std::cout << "Введите путь к файлу ";
-        char path[100];
-        std::cin >> path;
-        file.open(path, fstream::out | fstream::app);
-    }
-
-    for (int i = 0; i < this->count; i++)
-    {
-        file << i+1 << ".   \"" << this->arr[i].name << "\"\t\t" << arr[i].priority << endl;
-    }
-
-    file << std::endl;
+    std::ofstream file;
+    file.open(filename);
+    file << *this;
     file.close();
     SetConsoleCP(866);
     SetConsoleOutputCP(866);
-    return;
 }
 
-void que::getfromfile(std::string filename)
+que& que::getfromfile(std::string filename)
 {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    std::fstream file(filename);
+    std::fstream file;
+    file.open(filename);
 
     while (!file.is_open())
     {
-        std::cout << "Введите путь к файлу ";
+        std::cout << "РќРµ РІРµСЂРЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ РІРІРµРґРёС‚Рµ СЃРЅРѕРІР°\n";
         char path[100];
         std::cin >> path;
         file.open(path);
     }
 
-    people p;
-    stringstream ss;
-    ss << file.rdbuf();
+    file >> *this;
     file.close();
-    
-    for(int i = 5; i < ss.str().size(); i++)
-    {
-        if (ss.str()[i] == '\"')
-        {
-            int j = i + 1, x = 0;
-            string tempname, temp;
-            
-                while (ss.str()[j] != '\"')
-                {
-                    tempname += ss.str()[j];
-                    j++;
-                }     
-                j += 2;
-                x = ss.str().find('\n', j);
-                if (x != std::string::npos)
-                {
-                    temp = ss.str().substr(j, x);
-                }
-                else 
-                {
-                    temp = ss.str().substr(j, 1);
-                }
-
-                p.name = tempname;
-                p.priority = stoi(temp);
-                i = j + 2;
-                this->enqueue(p);
-        }
-    }
-
     SetConsoleCP(866);
     SetConsoleOutputCP(866);
-    return;
+    return *this;
 }
 
 void que::setpriority()
@@ -259,3 +227,58 @@ void que::setpriority()
     }
 }
 
+que& que::operator+(const que& q)
+{
+    for (int i = 0; i < q.count; i++)
+    {
+        this->push(q.arr[i]);
+    }
+    return *this;
+}
+
+ostream& operator<<(ostream& os, const que& q)
+{
+    for (int i = 0; i < q.count; i++)
+    {
+        os << i + 1 << ".   \"" << q.arr[i].name << "\"\t\t" << q.arr[i].priority << endl;
+    }
+    return os;
+}
+
+istream& operator >>(istream& is, que& q)
+{
+    people p;
+    stringstream ss;
+    ss << is.rdbuf();
+
+    for (int i = 5; i < ss.str().size(); i++)
+    {
+        if (ss.str()[i] == '\"')
+        {
+            int j = i + 1, x = 0;
+            string tempname, temp;
+
+            while (ss.str()[j] != '\"')
+            {
+                tempname += ss.str()[j];
+                j++;
+            }
+            j += 2;
+            x = ss.str().find('\n', j);
+            if (x != std::string::npos)
+            {
+                temp = ss.str().substr(j, x);
+            }
+            else
+            {
+                temp = ss.str().substr(j, 1);
+            }
+
+            p.name = tempname;
+            p.priority = stoi(temp);
+            i = j + 2;
+            q.push(p);
+        }
+    }
+    return is;
+}
